@@ -1,74 +1,3 @@
-// "use client";
-// import { useSearchParams } from "next/navigation";
-// import { useEffect, useState, useRef } from "react";
-// import QRCode from "qrcode";
-// import { saveAs } from "file-saver";
-// import html2canvas from "html2canvas";
-// import { useQuery } from "convex/react";
-// import { api } from "@/convex/_generated/api";
-
-// export default function DownloadTicket() {
-//   const searchParams = useSearchParams();
-//   const eventId = searchParams.get("eventId");
-//   const userId = searchParams.get("userId");
-
-//   // Ensure eventId and userId are valid
-//   if (!eventId || !userId) {
-//     return <p className="text-red-500">Error: Event ID or User ID is missing.</p>;
-//   }
-
-//   // Fetch event details
-//   const event = useQuery(api.events.getEvent, { eventId });
-
-//   // Generate QR code data
-//   const [qrCodeUrl, setQrCodeUrl] = useState("");
-//   const ticketRef = useRef<HTMLDivElement>(null);
-
-//   useEffect(() => {
-//     if (event && userId) {
-//       const ticketData = JSON.stringify({
-//         eventName: event.name,
-//         userId: userId,
-//       });
-
-//       QRCode.toDataURL(ticketData)
-//         .then((url) => setQrCodeUrl(url))
-//         .catch((err) => console.error("QR Code Error:", err));
-//     }
-//   }, [event, userId]);
-
-//   // Function to download ticket as an image
-//   const handleDownload = async () => {
-//     if (!ticketRef.current) return;
-
-//     try {
-//       const canvas = await html2canvas(ticketRef.current);
-//       const image = canvas.toDataURL("image/png");
-//       saveAs(image, `${event?.name}_Ticket.png`);
-//     } catch (error) {
-//       console.error("Error generating ticket image:", error);
-//     }
-//   };
-
-//   if (!event) return <p>Loading event details...</p>;
-
-//   return (
-//     <div className="flex flex-col items-center">
-//       <div ref={ticketRef} className="p-4 border rounded-lg shadow-md bg-white">
-//         <h2 className="text-lg font-bold">{event.name}</h2>
-//         {qrCodeUrl && <img src={qrCodeUrl} alt="QR Code" className="mt-4 w-32 h-32" />}
-//       </div>
-
-//       <button
-//         onClick={handleDownload}
-//         className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-lg"
-//       >
-//         Download Ticket
-//       </button>
-//     </div>
-//   );
-// }
-
 "use client";
 
 import { useSearchParams } from "next/navigation";
@@ -84,16 +13,8 @@ export default function DownloadTicket() {
   const eventId = searchParams.get("eventId");
   const userId = searchParams.get("userId");
 
-  if (!eventId || !userId) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <p className="text-red-500 text-lg font-semibold">Error: Event ID or User ID is missing.</p>
-      </div>
-    );
-  }
-
-  // Fetch event details
-  const event = useQuery(api.events.getEvent, { eventId });
+  // Hooks should be called unconditionally
+  const event = useQuery(api.events.getEvent, eventId ? { eventId } : "skip");
 
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const ticketRef = useRef<HTMLDivElement>(null);
@@ -119,6 +40,14 @@ export default function DownloadTicket() {
       console.error("Error generating ticket image:", error);
     }
   };
+
+  if (!eventId || !userId) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-red-500 text-lg font-semibold">Error: Event ID or User ID is missing.</p>
+      </div>
+    );
+  }
 
   if (!event)
     return (

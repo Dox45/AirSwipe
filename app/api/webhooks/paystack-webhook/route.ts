@@ -19,7 +19,7 @@ export async function POST(request) {
 
 
   if (event && event.event === 'charge.success') {
-    const email = event.data.customer.email;
+    // const email = event.data.customer.email;
     // Handle successful payment
     await handleSuccessfulPayment(event);
   }
@@ -37,7 +37,7 @@ async function handleSuccessfulPayment(event) {
     const waitingListId = metadata.waitingListId; 
     const paymentIntentId = data.reference;
     const amount = data.amount;
-    const email = data.customer.email;
+    // const email = data.customer.email;
 
     if (!eventId || !userId || !waitingListId) {
       console.error("Missing required metadata:", metadata);
