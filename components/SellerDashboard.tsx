@@ -1,28 +1,28 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+// import { useUser } from "@clerk/nextjs";
+// import { useMutation } from "convex/react";
+// import { api } from "@/convex/_generated/api";
+// import { useRouter } from "next/navigation";
+import React from "react";
 import { CalendarDays, Plus } from "lucide-react";
 import Link from "next/link";
 
 export default function SellerDashboard() {
-  const [registering, setRegistering] = useState(false);
-  const { user } = useUser();
-  const router = useRouter();
-  const registerAsSeller = useMutation(api.users.registerAsSeller);
+  // const [registering, setRegistering] = useState(false);
+  // const { user } = useUser();
+  // const router = useRouter();
+  // const registerAsSeller = useMutation(api.users.registerAsSeller);
 
-  const handleRegister = async () => {
-    setRegistering(true);
-    try {
-      await registerAsSeller({ userId: user?.id });
-    } catch (error) {
-      console.error("Error registering as seller:", error);
-    }
-    setRegistering(false);
-  };
+  // const handleRegister = async () => {
+  //   setRegistering(true);
+  //   try {
+  //     await registerAsSeller({ userId: user?.id });
+  //   } catch (error) {
+  //     console.error("Error registering as seller:", error);
+  //   }
+  //   setRegistering(false);
+  // };
 
   return (
     <div className="max-w-3xl mx-auto p-6">
