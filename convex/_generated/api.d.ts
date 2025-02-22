@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as account from "../account.js";
 import type * as constants from "../constants.js";
 import type * as crons from "../crons.js";
 import type * as events from "../events.js";
@@ -30,6 +31,7 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  account: typeof account;
   constants: typeof constants;
   crons: typeof crons;
   events: typeof events;

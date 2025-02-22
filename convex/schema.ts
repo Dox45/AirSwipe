@@ -10,6 +10,7 @@ export default defineSchema({
     price: v.number(),
     totalTickets: v.number(),
     userId: v.string(),
+    subaccountCode: v.optional(v.string()),
     imageStorageId: v.optional(v.id("_storage")),
     is_cancelled: v.optional(v.boolean()),
   }),
@@ -54,4 +55,14 @@ export default defineSchema({
   })
     .index("by_user_id", ["userId"])
     .index("by_email", ["email"]),
+
+  subaccounts: defineTable({
+    userId: v.string(),
+    subaccountId: v.number(),
+    subaccountCode: v.string(),
+    businessName: v.string(),
+    settlementBank: v.string(),
+    accountNumber: v.string(),
+    percentageCharge: v.number(),
+  }).index("by_user", ["userId"]),
 });

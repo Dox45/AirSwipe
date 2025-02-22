@@ -49,6 +49,14 @@ export const create = mutation({
     userId: v.string(),
   },
   handler: async (ctx, args) => {
+    const subaccount = await ctx.db
+      .query("subaccounts")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .unique();
+
+    if (!subaccount) {
+      throw new Error("no settlement account found for this account");
+    }
     const eventId = await ctx.db.insert("events", {
       name: args.name,
       description: args.description,
@@ -57,6 +65,7 @@ export const create = mutation({
       price: args.price,
       totalTickets: args.totalTickets,
       userId: args.userId,
+      subaccountCode: subaccount.subaccountCode,
     });
     return eventId;
   },
