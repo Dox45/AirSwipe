@@ -16,6 +16,9 @@ export default function PurchaseTicket({ eventId }: { eventId: Id<"events"> }) {
     eventId,
     userId: user?.id ?? "",
   });
+  const event = useQuery(api.events.getById, {
+    eventId: eventId,
+  });
 
   const ticketPrice = useQuery(api.tickets.getTicketPrice, { eventId }) ?? 0;
 
@@ -68,9 +71,10 @@ const handlePurchase = async () => {
       router.push(`/download-ticket?eventId=${eventId}&userId=${user.id}`);
       return;
     }
+    const subaccountCode = event?.subaccountCode ? `&subaccountCode=${event.subaccountCode}` : "";
 
     // Redirect to the payment page with the necessary data
-    router.push(`/payment?email=${userEmail}&amount=${ticketPrice}&eventId=${eventId}&userId=${user.id}&waitingListId=${queuePosition._id}`);
+    router.push(`/payment?email=${userEmail}&amount=${ticketPrice}&eventId=${eventId}&userId=${user.id}&waitingListId=${queuePosition._id}${subaccountCode}`);
   } catch (error) {
     console.error("Error purchasing ticket:", error);
     toast?.error(error instanceof Error ? error.message : "Failed to process payment");
