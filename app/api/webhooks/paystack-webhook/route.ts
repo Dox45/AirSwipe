@@ -5,7 +5,7 @@ import { api } from "@/convex/_generated/api";
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
-export async function POST(request) {
+export async function POST(request: Request) {
   const signature = request.headers.get('x-paystack-signature');
   const rawBody = await request.text();
 
