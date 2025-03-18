@@ -44,6 +44,12 @@ function Header() {
                   My Tickets
                 </button>
               </Link>
+
+              <Link href="/account" className="flex-1">
+              <button className="w-full bg-gray-100 text-gray-800 px-3 py-1.5 text-sm rounded-lg hover:bg-gray-200 transition border border-gray-300">
+                My Account
+              </button>
+            </Link>
               <UserButton />
             </div>
           </SignedIn>
@@ -69,6 +75,11 @@ function Header() {
             <Link href="/tickets" className="flex-1">
               <button className="w-full bg-gray-100 text-gray-800 px-3 py-1.5 text-sm rounded-lg hover:bg-gray-200 transition border border-gray-300">
                 My Tickets
+              </button>
+            </Link>
+            <Link href="/account" className="flex-1">
+              <button className="w-full bg-gray-100 text-gray-800 px-3 py-1.5 text-sm rounded-lg hover:bg-gray-200 transition border border-gray-300">
+                My Account
               </button>
             </Link>
           </SignedIn>

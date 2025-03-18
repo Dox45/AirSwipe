@@ -112,20 +112,44 @@ export default function EventForm({ mode, initialData }: EventFormProps) {
         }
 
         if (mode === "create") {
-          const eventId = await createEvent({
-            ...values,
-            userId: user.id,
-            eventDate: values.eventDate.getTime(),
-          });
-
-          if (imageStorageId) {
-            await updateEventImage({
-              eventId,
-              storageId: imageStorageId as Id<"_storage">,
+          try {
+            const eventId = await createEvent({
+              ...values,
+              userId: user.id,
+              eventDate: values.eventDate.getTime(),
             });
-          }
 
-          router.push(`/event/${eventId}`);
+            if (imageStorageId) {
+              await updateEventImage({
+                eventId,
+                storageId: imageStorageId as Id<"_storage">,
+              });
+            }
+
+            router.push(`/event/${eventId}`);
+          } catch (error) {
+            // Check if it's the no settlement account error
+            if (error instanceof Error && error.message.includes("no settlement account")) {
+              toast({
+                variant: "destructive",
+                title: "Settlement Account Required",
+                description: (
+                  <div className="flex flex-col gap-2">
+                    <p>You need to set up a settlement account before creating events.</p>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => router.push("/account")}
+                    >
+                      Set up Account
+                    </Button>
+                  </div>
+                ),
+                duration: 10000, // Show for 10 seconds
+              });
+              return;
+            }
+            throw error; // Re-throw if it's a different error
+          }
         } else {
           // Ensure initialData exists before proceeding with update
           if (!initialData) {

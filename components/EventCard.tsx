@@ -13,12 +13,14 @@ import {
   XCircle,
   PencilIcon,
   StarIcon,
+  Share2Icon,
 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import PurchaseTicket from "./PurchaseTicket";
 import { useRouter } from "next/navigation";
 import { useStorageUrl } from "@/lib/utils";
 import Image from "next/image";
+import ShareEventButton from "./ShareEventButton";
 
 export default function EventCard({ eventId }: { eventId: Id<"events"> }) {
   const { user } = useUser();
@@ -191,15 +193,22 @@ export default function EventCard({ eventId }: { eventId: Id<"events"> }) {
 
           {/* Price Tag */}
           <div className="flex flex-col items-end gap-2 ml-4">
-            <span
-              className={`px-4 py-1.5 font-semibold rounded-full ${
-                isPastEvent
-                  ? "bg-gray-50 text-gray-500"
-                  : "bg-green-50 text-green-700"
-              }`}
-            >
-              £{event.price.toFixed(2)}
-            </span>
+            <div className="flex items-center gap-2">
+              <ShareEventButton 
+                eventName={event.name}
+                eventSlug={event.slug}
+                eventId={eventId}
+              />
+              <span
+                className={`px-4 py-1.5 font-semibold rounded-full ${
+                  isPastEvent
+                    ? "bg-gray-50 text-gray-500"
+                    : "bg-green-50 text-green-700"
+                }`}
+              >
+                £{event.price.toFixed(2)}
+              </span>
+            </div>
             {availability.purchasedCount >= availability.totalTickets && (
               <span className="px-4 py-1.5 bg-red-50 text-red-700 font-semibold rounded-full text-sm">
                 Sold Out

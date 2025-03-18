@@ -1,26 +1,60 @@
-"use client"
+"use client";
+
 import { Id } from "@/convex/_generated/dataModel";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import ReleaseTicket from "./ReleaseTicket";
 import { Ticket } from "lucide-react";
 import { toast } from 'react-toastify';
+import useDebounce from "@/hooks/useDebounce";
 
-export default function PurchaseTicket({ eventId }: { eventId: Id<"events"> }) {
+interface PurchaseTicketProps {
+  eventId: Id<"events">;
+  buyForSomeoneElse?: boolean;
+  recipientEmail?: string;
+}
+
+export default function PurchaseTicket({ 
+  eventId,
+  buyForSomeoneElse = false,
+  recipientEmail = ""
+}: PurchaseTicketProps) {
   const router = useRouter();
   const { user } = useUser();
-  const queuePosition = useQuery(api.waitingList.getQueuePosition, {
-    eventId,
-    userId: user?.id ?? "",
-  });
-  const event = useQuery(api.events.getById, {
-    eventId: eventId,
-  });
+  const [debouncedEmail] = useDebounce(recipientEmail, 500);
 
-  const ticketPrice = useQuery(api.tickets.getTicketPrice, { eventId }) ?? 0;
+  // Only fetch queue position if user is available
+  const queuePosition = useQuery(
+    api.waitingList.getQueuePosition,
+    user?.id && eventId 
+      ? { 
+          eventId, 
+          userId: user.id, 
+          ...(buyForSomeoneElse && debouncedEmail ? { recipientUserId: debouncedEmail } : {}) 
+        } 
+      : "skip"
+  );
+
+
+  const event = useQuery(
+    api.events.getById, 
+    eventId ? { eventId } : "skip"
+  );
+
+  const ticketPrice = useQuery(
+    api.tickets.getTicketPrice, 
+    eventId ? { eventId } : "skip"
+  ) ?? 0;
+  console.log("Event ID:", eventId);
+  console.log("User ID:", user?.id);
+  console.log("Queue Position:", queuePosition);
+  console.log("Queue Position Status:", queuePosition?.status);
+  console.log("Queue Position Offer Expires At:", queuePosition?.offerExpiresAt);
+  console.log("Recipient Email from Queue:", queuePosition?.recipientEmail);
+  console.log("User's Primary Email:", user?.emailAddresses[0]?.emailAddress);
 
   const [timeRemaining, setTimeRemaining] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -29,6 +63,8 @@ export default function PurchaseTicket({ eventId }: { eventId: Id<"events"> }) {
   const isExpired = Date.now() > offerExpiresAt;
 
   useEffect(() => {
+    if (!offerExpiresAt) return;
+
     const calculateTimeRemaining = () => {
       if (isExpired) {
         setTimeRemaining("Expired");
@@ -51,39 +87,55 @@ export default function PurchaseTicket({ eventId }: { eventId: Id<"events"> }) {
     return () => clearInterval(interval);
   }, [offerExpiresAt, isExpired]);
 
+const userEmail = queuePosition?.recipientEmail || user.emailAddresses[0]?.emailAddress;
 
+  const handlePurchase = async () => {
+    if (!user || isExpired || !queuePosition) return;
 
-const handlePurchase = async () => {
-  if (!user || isExpired) return;
+    try {
+      setIsLoading(true);
 
-  try {
-    setIsLoading(true);
-    const userEmail = user.emailAddresses[0]?.emailAddress;
-    
-    if (!userEmail) {
-      throw new Error("No email address found for user");
+      // Ensure a valid email is available
+      if (!userEmail) {
+        throw new Error("No valid email address found for ticket purchase");
+      }
+
+      console.log(`Purchasing for: ${userEmail}`);
+
+      if (ticketPrice <= 0) {
+        // Create a ticket record for free tickets
+        const createTicket = await fetch('/api/create-free-ticket', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            eventId,
+            buyerUserId: user.id,
+            recipientEmail: userEmail,
+            waitingListId: queuePosition._id
+          })
+        });
+
+        if (!createTicket.ok) {
+          throw new Error('Failed to create ticket record');
+        }
+
+        const { ticketId } = await createTicket.json();
+        router.push(`/download-ticket?eventId=${eventId}&userId=${user.id}&ticketId=${ticketId}`);
+        return;
+      }
+
+      const subaccountCode = event?.subaccountCode ? `&subaccountCode=${event.subaccountCode}` : "";
+
+      router.push(`/payment?email=${userEmail}&amount=${ticketPrice}&eventId=${eventId}&userId=${user.id}&waitingListId=${queuePosition._id}${subaccountCode}`);
+    } catch (error) {
+      console.error("Error purchasing ticket:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to process payment");
+    } finally {
+      setIsLoading(false);
     }
-
-    console.log(`User Email: ${userEmail}`);
-
-    if (ticketPrice <= 0) {
-      // Free ticket logic - Redirect to download
-      router.push(`/download-ticket?eventId=${eventId}&userId=${user.id}`);
-      return;
-    }
-    const subaccountCode = event?.subaccountCode ? `&subaccountCode=${event.subaccountCode}` : "";
-
-    // Redirect to the payment page with the necessary data
-    router.push(`/payment?email=${userEmail}&amount=${ticketPrice}&eventId=${eventId}&userId=${user.id}&waitingListId=${queuePosition._id}${subaccountCode}`);
-  } catch (error) {
-    console.error("Error purchasing ticket:", error);
-    toast?.error(error instanceof Error ? error.message : "Failed to process payment");
-  } finally {
-    setIsLoading(false); // Hide loading state
-  }
-};
-
-
+  };
 
   if (!user || !queuePosition || queuePosition.status !== "offered") {
     return null;
@@ -109,7 +161,7 @@ const handlePurchase = async () => {
             </div>
 
             <div className="text-sm text-gray-600 leading-relaxed">
-              A ticket has been reserved for you. Complete your purchase before
+              A ticket has been reserved for {userEmail}. Complete your purchase before
               the timer expires to secure your spot at this event.
             </div>
           </div>
