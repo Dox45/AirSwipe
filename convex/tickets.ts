@@ -1,7 +1,7 @@
-import { query,action, mutation} from "./_generated/server";
+import { query, action, mutation } from "./_generated/server";
 import { internal } from "./_generated/api";
-// import { mutation, internal } from "convex";
 import { v } from "convex/values";
+import { TICKET_STATUS } from "./constants";
 
 
 export const getUserTicketForEvent = query({
@@ -12,8 +12,11 @@ export const getUserTicketForEvent = query({
   handler: async (ctx, { eventId, userId }) => {
     const ticket = await ctx.db
       .query("tickets")
-      .withIndex("by_user_event", (q) =>
-        q.eq("userId", userId).eq("eventId", eventId)
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("eventId"), eventId),
+          q.or(q.eq(q.field("buyerUserId"), userId), q.eq(q.field("recipientUserId"), userId))
+        )
       )
       .first();
 
@@ -21,10 +24,19 @@ export const getUserTicketForEvent = query({
   },
 });
 
+
 export const getTicketWithDetails = query({
-  args: { ticketId: v.id("tickets") },
-  handler: async (ctx, { ticketId }) => {
-    const ticket = await ctx.db.get(ticketId);
+  args: { 
+    eventId: v.id("events"),
+    userId: v.string(),
+  },
+  handler: async (ctx, { eventId, userId }) => {
+    // Find ticket for this user and event
+    const ticket = await ctx.db
+      .query("tickets")
+      .withIndex("by_user_event", q => q.eq("buyerUserId", userId).eq("eventId", eventId))
+      .first();
+
     if (!ticket) return null;
 
     const event = await ctx.db.get(ticket.eventId);
@@ -49,14 +61,41 @@ export const getValidTicketsForEvent = query({
   },
 });
 
+export const createTicket = mutation({
+  args: {
+    eventId: v.id("events"),
+    buyerUserId: v.string(),
+    recipientUserId: v.string(),
+    status: v.union(
+      v.literal(TICKET_STATUS.VALID),
+      v.literal(TICKET_STATUS.USED),
+      v.literal(TICKET_STATUS.REFUNDED),
+      v.literal(TICKET_STATUS.CANCELLED)
+    ),
+    amount: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Create ticket record
+    const ticketId = await ctx.db.insert("tickets", {
+      eventId: args.eventId,
+      buyerUserId: args.buyerUserId,
+      recipientUserId: args.recipientUserId,
+      status: args.status,
+      amount: args.amount,
+      purchasedAt: Date.now(),
+    });
+    return ticketId;
+  },
+});
+
 export const updateTicketStatus = mutation({
   args: {
     ticketId: v.id("tickets"),
     status: v.union(
-      v.literal("valid"),
-      v.literal("used"),
-      v.literal("refunded"),
-      v.literal("cancelled")
+      v.literal(TICKET_STATUS.VALID),
+      v.literal(TICKET_STATUS.USED),
+      v.literal(TICKET_STATUS.REFUNDED),
+      v.literal(TICKET_STATUS.CANCELLED)
     ),
   },
   handler: async (ctx, { ticketId, status }) => {

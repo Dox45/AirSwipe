@@ -4,6 +4,7 @@ import { v } from "convex/values";
 export default defineSchema({
   events: defineTable({
     name: v.string(),
+    slug: v.string(),
     description: v.string(),
     location: v.string(),
     eventDate: v.number(),
@@ -13,10 +14,11 @@ export default defineSchema({
     subaccountCode: v.optional(v.string()),
     imageStorageId: v.optional(v.id("_storage")),
     is_cancelled: v.optional(v.boolean()),
-  }),
+  }).index("by_slug", ["slug"]),
   tickets: defineTable({
     eventId: v.id("events"),
-    userId: v.string(),
+    buyerUserId: v.string(), // Who purchased the ticket
+    recipientUserId: v.optional(v.string()), // Who the ticket is for
     purchasedAt: v.number(),
     status: v.union(
       v.literal("valid"),
@@ -28,13 +30,17 @@ export default defineSchema({
     amount: v.optional(v.number()),
   })
     .index("by_event", ["eventId"])
-    .index("by_user", ["userId"])
-    .index("by_user_event", ["userId", "eventId"])
-    .index("by_payment_intent", ["paymentIntentId"]),
+    .index("by_buyer", ["buyerUserId"])
+    .index("by_recipient", ["recipientUserId"])
+    .index("by_user_event", ["buyerUserId", "eventId"]),
+
+
 
   waitingList: defineTable({
     eventId: v.id("events"),
     userId: v.string(),
+    recipientUserId: v.optional(v.string()),
+    recipientEmail: v.optional(v.string()),
     status: v.union(
       v.literal("waiting"),
       v.literal("offered"),
@@ -43,8 +49,8 @@ export default defineSchema({
     ),
     offerExpiresAt: v.optional(v.number()),
   })
-    .index("by_event_status", ["eventId", "status"])
-    .index("by_user_event", ["userId", "eventId"])
+    .index("by_event_status", ["eventId","status"])
+    .index("by_user_event", ["userId", "recipientUserId","eventId"])
     .index("by_user", ["userId"]),
 
   users: defineTable({

@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
+import { generateSlug } from "../lib/utils";
 import { DURATIONS, WAITING_LIST_STATUS, TICKET_STATUS } from "./constants";
 import { components, internal } from "./_generated/api";
 import { processQueue } from "./waitingList";
@@ -16,8 +17,8 @@ export type Metrics = {
 const rateLimiter = new RateLimiter(components.rateLimiter, {
   queueJoin: {
     kind: "fixed window",
-    rate: 3, // 3 joins allowed
-    period: 30 * MINUTE, // in 30 minutes
+    rate: 10, // 10 joins allowed
+    period: 5 * MINUTE, // in 5 minutes
   },
 });
 
@@ -35,6 +36,16 @@ export const getById = query({
   args: { eventId: v.id("events") },
   handler: async (ctx, { eventId }) => {
     return await ctx.db.get(eventId);
+  },
+});
+
+export const getBySlug = query({
+  args: { slug: v.string() },
+  handler: async (ctx, { slug }) => {
+    return await ctx.db
+      .query("events")
+      .withIndex("by_slug", q => q.eq("slug", slug))
+      .first();
   },
 });
 
@@ -57,8 +68,20 @@ export const create = mutation({
     if (!subaccount) {
       throw new Error("no settlement account found for this account");
     }
+    // Generate a unique slug from the event name
+    const baseSlug = generateSlug(args.name);
+    let slug = baseSlug;
+    let counter = 1;
+
+    // Check if slug exists and generate a unique one if needed
+    while (await ctx.db.query("events").withIndex("by_slug", q => q.eq("slug", slug)).first()) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
     const eventId = await ctx.db.insert("events", {
       name: args.name,
+      slug,
       description: args.description,
       location: args.location,
       eventDate: args.eventDate,
@@ -97,7 +120,8 @@ export const checkAvailability = query({
     const activeOffers = await ctx.db
       .query("waitingList")
       .withIndex("by_event_status", (q) =>
-        q.eq("eventId", eventId).eq("status", WAITING_LIST_STATUS.OFFERED)
+        q.eq("eventId", eventId)
+        .eq("status", WAITING_LIST_STATUS.OFFERED)
       )
       .collect()
       .then(
@@ -117,54 +141,163 @@ export const checkAvailability = query({
 });
 
 // Join waiting list for an event
+// export const joinWaitingList = mutation({
+//   // Function takes an event ID and user ID as arguments
+//   args: { eventId: v.id("events"), userId: v.string() },
+//   handler: async (ctx, { eventId, userId }) => {
+//     // Rate limit check
+//     const status = await rateLimiter.limit(ctx, "queueJoin", { key: userId });
+//     if (!status.ok) {
+//       throw new ConvexError(
+//         `You've joined the waiting list too many times. Please wait ${Math.ceil(
+//           status.retryAfter / (60 * 1000)
+//         )} minutes before trying again.`
+//       );
+//     }
+
+//     // First check if user already has an active entry in waiting list for this event
+//     // Active means any status except EXPIRED
+//     const existingEntry = await ctx.db
+//       .query("waitingList")
+//       .withIndex("by_user_event", (q) =>
+//         q.eq("userId", userId).eq("eventId", eventId)
+//       )
+//       .filter((q) => q.neq(q.field("status"), WAITING_LIST_STATUS.EXPIRED))
+//       .first();
+
+//     // Don't allow duplicate entries
+//     if (existingEntry) {
+//       throw new Error("Already in waiting list for this event");
+//     }
+
+//     // Verify the event exists
+//     const event = await ctx.db.get(eventId);
+//     if (!event) throw new Error("Event not found");
+
+//     // Check if there are any available tickets right now
+//     const { available } = await checkAvailability(ctx, { eventId });
+
+//     const now = Date.now();
+
+//     if (available) {
+//       // If tickets are available, create an offer entry
+//       const waitingListId = await ctx.db.insert("waitingList", {
+//         eventId,
+//         userId,
+//         status: WAITING_LIST_STATUS.OFFERED, // Mark as offered
+//         offerExpiresAt: now + DURATIONS.TICKET_OFFER, // Set expiration time
+//       });
+
+//       // Schedule a job to expire this offer after the offer duration
+//       await ctx.scheduler.runAfter(
+//         DURATIONS.TICKET_OFFER,
+//         internal.waitingList.expireOffer,
+//         {
+//           waitingListId,
+//           eventId,
+//         }
+//       );
+//     } else {
+//       // If no tickets available, add to waiting list
+//       await ctx.db.insert("waitingList", {
+//         eventId,
+//         userId,
+//         status: WAITING_LIST_STATUS.WAITING, // Mark as waiting
+//       });
+//     }
+
+//     // Return appropriate status message
+//     return {
+//       success: true,
+//       status: available
+//         ? WAITING_LIST_STATUS.OFFERED // If available, status is offered
+//         : WAITING_LIST_STATUS.WAITING, // If not available, status is waiting
+//       message: available
+//         ? "Ticket offered - you have 15 minutes to purchase"
+//         : "Added to waiting list - you'll be notified when a ticket becomes available",
+//     };
+//   },
+// });
+
 export const joinWaitingList = mutation({
-  // Function takes an event ID and user ID as arguments
-  args: { eventId: v.id("events"), userId: v.string() },
-  handler: async (ctx, { eventId, userId }) => {
-    // Rate limit check
-    const status = await rateLimiter.limit(ctx, "queueJoin", { key: userId });
+  args: {
+    eventId: v.id("events"),
+    userId: v.string(),
+    recipientEmail: v.optional(v.string()),
+  },
+  handler: async (ctx, { eventId, userId, recipientEmail }) => {
+    // Rate limit check per event instead of per user
+    const status = await rateLimiter.limit(ctx, "queueJoin", { key: eventId });
     if (!status.ok) {
       throw new ConvexError(
-        `You've joined the waiting list too many times. Please wait ${Math.ceil(
+        `This event's waiting list is experiencing high traffic. Please wait ${Math.ceil(
           status.retryAfter / (60 * 1000)
-        )} minutes before trying again.`
+        )} minutes and try again.`
       );
     }
 
-    // First check if user already has an active entry in waiting list for this event
-    // Active means any status except EXPIRED
-    const existingEntry = await ctx.db
-      .query("waitingList")
-      .withIndex("by_user_event", (q) =>
-        q.eq("userId", userId).eq("eventId", eventId)
-      )
-      .filter((q) => q.neq(q.field("status"), WAITING_LIST_STATUS.EXPIRED))
+   let recipientUserId: string | undefined = undefined; // Fix type issue
+
+  if (recipientEmail) {
+    const recipientUser = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", recipientEmail))
       .first();
 
-    // Don't allow duplicate entries
-    if (existingEntry) {
-      throw new Error("Already in waiting list for this event");
+    if (recipientUser) {
+      recipientUserId = recipientUser._id as string; // Explicit cast to string
     }
+  }
+
+
+    // Check if recipient already has an active entry in waiting list for this event
+    // const existingEntry = await ctx.db
+    //   .query("waitingList")
+    //   .withIndex("by_user_event", (q) =>
+    //     q.eq("userId", recipientUserId ?? userId).eq("eventId", eventId)
+    //   )
+    //   .filter((q) => q.neq(q.field("status"), WAITING_LIST_STATUS.EXPIRED))
+    //   .first();
+
+    // if (existingEntry) {
+    //   throw new Error("Recipient is already in the waiting list for this event");
+    // }
+  const existingEntry = await ctx.db
+    .query("waitingList")
+    .withIndex("by_user_event", (q) =>
+      q.eq("userId", userId)
+       .eq("recipientUserId", recipientUserId) // Must match index order
+       .eq("eventId", eventId)
+    )
+    .filter((q) => q.neq(q.field("status"), "expired"))
+    .first();
+
+  if (existingEntry) {
+    throw new Error("Recipient is already in the waiting list for this event.");
+  }
+
+
 
     // Verify the event exists
     const event = await ctx.db.get(eventId);
     if (!event) throw new Error("Event not found");
 
-    // Check if there are any available tickets right now
+    // Check ticket availability
     const { available } = await checkAvailability(ctx, { eventId });
-
     const now = Date.now();
 
     if (available) {
       // If tickets are available, create an offer entry
       const waitingListId = await ctx.db.insert("waitingList", {
         eventId,
-        userId,
-        status: WAITING_LIST_STATUS.OFFERED, // Mark as offered
-        offerExpiresAt: now + DURATIONS.TICKET_OFFER, // Set expiration time
+        userId, // Purchaser
+        recipientUserId, // Null if recipient has no account
+        recipientEmail, // Email if recipient has no account
+        status: WAITING_LIST_STATUS.OFFERED,
+        offerExpiresAt: now + DURATIONS.TICKET_OFFER,
       });
 
-      // Schedule a job to expire this offer after the offer duration
+      // Schedule a job to expire this offer
       await ctx.scheduler.runAfter(
         DURATIONS.TICKET_OFFER,
         internal.waitingList.expireOffer,
@@ -174,20 +307,19 @@ export const joinWaitingList = mutation({
         }
       );
     } else {
-      // If no tickets available, add to waiting list
+      // Add to waiting list
       await ctx.db.insert("waitingList", {
         eventId,
-        userId,
-        status: WAITING_LIST_STATUS.WAITING, // Mark as waiting
+        userId, // Purchaser
+        recipientUserId, // Null if recipient has no account
+        recipientEmail, // Email if recipient has no account
+        status: WAITING_LIST_STATUS.WAITING,
       });
     }
 
-    // Return appropriate status message
     return {
       success: true,
-      status: available
-        ? WAITING_LIST_STATUS.OFFERED // If available, status is offered
-        : WAITING_LIST_STATUS.WAITING, // If not available, status is waiting
+      status: available ? WAITING_LIST_STATUS.OFFERED : WAITING_LIST_STATUS.WAITING,
       message: available
         ? "Ticket offered - you have 15 minutes to purchase"
         : "Added to waiting list - you'll be notified when a ticket becomes available",
@@ -195,21 +327,23 @@ export const joinWaitingList = mutation({
   },
 });
 
-// Purchase ticket
+
 export const purchaseTicket = mutation({
   args: {
     eventId: v.id("events"),
-    userId: v.string(),
+    buyerUserId: v.string(), // Buyer (could be different from recipient)
     waitingListId: v.id("waitingList"),
+    recipientUserId: v.string(), // Added to match webhook's recipient info
     paymentInfo: v.object({
       paymentIntentId: v.string(),
       amount: v.number(),
     }),
   },
-  handler: async (ctx, { eventId, userId, waitingListId, paymentInfo }) => {
+  handler: async (ctx, args) => {
+    const { eventId, buyerUserId, waitingListId, recipientUserId, paymentInfo } = args;
     console.log("Starting purchaseTicket handler", {
       eventId,
-      userId,
+      buyerUserId,
       waitingListId,
     });
 
@@ -226,17 +360,17 @@ export const purchaseTicket = mutation({
       console.error("Invalid waiting list status", {
         status: waitingListEntry.status,
       });
-      throw new Error(
-        "Invalid waiting list status - ticket offer may have expired"
-      );
+      throw new Error("Invalid waiting list status - ticket offer may have expired");
     }
 
-    if (waitingListEntry.userId !== userId) {
-      console.error("User ID mismatch", {
-        waitingListUserId: waitingListEntry.userId,
-        requestUserId: userId,
+    // Verify that the recipient matches the waiting list entry
+    const expectedRecipientId = waitingListEntry.recipientUserId ?? waitingListEntry.userId;
+    if (expectedRecipientId !== args.recipientUserId) {
+      console.error("Recipient mismatch", {
+        expected: expectedRecipientId,
+        received: args.recipientUserId
       });
-      throw new Error("Waiting list entry does not belong to this user");
+      throw new Error("Invalid recipient for this waiting list entry");
     }
 
     // Verify event exists and is active
@@ -258,7 +392,8 @@ export const purchaseTicket = mutation({
       // Create ticket with payment info
       await ctx.db.insert("tickets", {
         eventId,
-        userId,
+        buyerUserId, // Store who made the purchase
+        recipientUserId: args.recipientUserId, // Store who will use the ticket
         purchasedAt: Date.now(),
         status: TICKET_STATUS.VALID,
         paymentIntentId: paymentInfo.paymentIntentId,
@@ -288,7 +423,9 @@ export const getUserTickets = query({
   handler: async (ctx, { userId }) => {
     const tickets = await ctx.db
       .query("tickets")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) =>
+        q.or(q.eq(q.field("buyerUserId"), userId), q.eq(q.field("recipientUserId"), userId))
+      )
       .collect();
 
     const ticketsWithEvents = await Promise.all(
@@ -297,6 +434,7 @@ export const getUserTickets = query({
         return {
           ...ticket,
           event,
+          role: ticket.buyerUserId === userId ? "buyer" : "recipient",
         };
       })
     );

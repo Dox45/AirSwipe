@@ -13,15 +13,34 @@ export const saveSubaccount = mutation({
     percentageCharge: v.number(),
   },
   handler: async ({ db }, { userId, subaccountId, subaccountCode, businessName, settlementBank, accountNumber, percentageCharge }) => {
-    await db.insert("subaccounts", {
-      userId,
-      subaccountId,
-      subaccountCode,
-      businessName,
-      settlementBank,
-      accountNumber,
-      percentageCharge,
-    });
+    // Check if user already has a subaccount
+    const existingSubaccount = await db
+      .query("subaccounts")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (existingSubaccount) {
+      // Update existing subaccount
+      await db.patch(existingSubaccount._id, {
+        subaccountId,
+        subaccountCode,
+        businessName,
+        settlementBank,
+        accountNumber,
+        percentageCharge,
+      });
+    } else {
+      // Create new subaccount
+      await db.insert("subaccounts", {
+        userId,
+        subaccountId,
+        subaccountCode,
+        businessName,
+        settlementBank,
+        accountNumber,
+        percentageCharge,
+      });
+    }
   },
 });
 

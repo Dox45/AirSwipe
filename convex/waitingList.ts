@@ -28,30 +28,74 @@ function groupByEvent(
  * Query to get a user's current position in the waiting list for an event.
  * Returns null if user is not in queue, otherwise returns their entry with position.
  */
+export const getEntry = query({
+  args: {
+    waitingListId: v.id("waitingList"),
+  },
+  handler: async (ctx, { waitingListId }) => {
+    return await ctx.db.get(waitingListId);
+  },
+});
+
 export const getQueuePosition = query({
   args: {
     eventId: v.id("events"),
     userId: v.string(),
+    recipientUserId: v.optional(v.string()), // Allow it to be optional if needed
   },
-  handler: async (ctx, { eventId, userId }) => {
-    // Get entry for this specific user and event combination
+  handler: async (ctx, { eventId, userId, recipientUserId }) => {
+    console.log("🔍 Fetching queue position for:", { eventId, userId, recipientUserId });
+
+    // Query for the entry using the by_user_event index
     const entry = await ctx.db
       .query("waitingList")
       .withIndex("by_user_event", (q) =>
-        q.eq("userId", userId).eq("eventId", eventId)
+        q.eq("userId", userId)
+         .eq("recipientUserId", recipientUserId ?? undefined)
+         .eq("eventId", eventId)
       )
-      .filter((q) => q.neq(q.field("status"), WAITING_LIST_STATUS.EXPIRED))
+      .filter((q) =>
+        q.and(
+          // Not expired
+          q.neq(q.field("status"), WAITING_LIST_STATUS.EXPIRED),
+          // Match either recipientEmail or recipientUserId
+          q.or(
+            // Case 1: Exact match on recipientUserId
+            q.eq(q.field("recipientUserId"), recipientUserId ?? undefined),
+            // Case 2: Match on recipientEmail
+            q.and(
+              q.eq(q.field("recipientUserId"), undefined),
+              q.eq(q.field("recipientEmail"), recipientUserId ?? undefined)
+            ),
+            // Case 3: No recipient (buying for self)
+            q.and(
+              q.eq(q.field("recipientUserId"), undefined),
+              q.eq(q.field("recipientEmail"), undefined)
+            )
+          )
+        )
+      )
       .first();
 
-    if (!entry) return null;
+    if (!entry) {
+      console.log("⚠️ No queue entry found for user:", userId);
+      return null; // Explicitly return `null`
+    }
 
     // Get total number of people ahead in line
     const peopleAhead = await ctx.db
       .query("waitingList")
-      .withIndex("by_event_status", (q) => q.eq("eventId", eventId))
+      .withIndex("by_event_status", (q) => q.eq("eventId", eventId)) // Use existing index
       .filter((q) =>
         q.and(
-          q.lt(q.field("_creationTime"), entry._creationTime),
+          // Exclude the current user's entries
+          q.not(
+            q.or(
+              q.eq(q.field("userId"), userId),
+              q.eq(q.field("recipientUserId"), recipientUserId ?? userId)
+            )
+          ),
+          q.lt(q.field("_creationTime"), entry._creationTime), // Only those ahead in line
           q.or(
             q.eq(q.field("status"), WAITING_LIST_STATUS.WAITING),
             q.eq(q.field("status"), WAITING_LIST_STATUS.OFFERED)
@@ -61,12 +105,19 @@ export const getQueuePosition = query({
       .collect()
       .then((entries) => entries.length);
 
+    console.log("✅ Found queue entry:", { ...entry, position: peopleAhead + 1 });
+
     return {
       ...entry,
       position: peopleAhead + 1,
+      recipientUserId: entry.recipientUserId ?? null, // Include recipient user ID
+      recipientEmail: entry.recipientEmail ?? null,
     };
   },
 });
+
+
+
 
 /**
  * Mutation to process the waiting list queue and offer tickets to next eligible users.
@@ -234,3 +285,6 @@ export const releaseTicket = mutation({
     await processQueue(ctx, { eventId });
   },
 });
+
+
+
