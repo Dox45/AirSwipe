@@ -2,9 +2,17 @@
 export const POST = async (req: Request) => {
   try {
     const body = await req.json(); // Extract JSON body
-    const { email, amount, eventId, userId, waitingListId , subaccountCode } = body;
+    const { email, amount, eventId, userId: buyerUserId, waitingListId, subaccountCode } = body;
+    
+    console.log("Initializing payment with metadata:", {
+      email,
+      amount,
+      eventId,
+      buyerUserId,
+      waitingListId,
+    });
 
-    if (!email || !amount || !eventId || !userId || !waitingListId || !subaccountCode) {
+    if (!email || !amount || !eventId || !buyerUserId || !waitingListId || !subaccountCode) {
       return new Response(JSON.stringify({ error: "Invalid payment details" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -24,8 +32,9 @@ export const POST = async (req: Request) => {
         bearer: "subaccount" ,
         metadata: {
           eventId,
-          userId,
+          buyerUserId,
           waitingListId,
+          purchaseEmail: email,
         },
       }),
     });

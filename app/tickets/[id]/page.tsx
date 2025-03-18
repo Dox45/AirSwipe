@@ -13,8 +13,14 @@ import { useEffect } from "react";
 export default function TicketPage() {
   const params = useParams();
   const { user } = useUser();
-  const ticket = useQuery(api.tickets.getTicketWithDetails, {
-    ticketId: params.id as Id<"tickets">,
+  const event = useQuery(api.events.getBySlug, {
+    slug: params.id as string,
+  });
+  
+  // Only fetch ticket if we have both user and event
+  const ticket = user && event && useQuery(api.tickets.getTicketWithDetails, {
+    eventId: event._id,
+    userId: user.id,
   });
 
   useEffect(() => {
@@ -22,16 +28,16 @@ export default function TicketPage() {
       redirect("/");
     }
 
-    if (!ticket || ticket.userId !== user.id) {
-      redirect("/tickets");
+    if (!event) {
+      redirect("/events"); // Redirect if event not found
     }
 
-    if (!ticket.event) {
-      redirect("/tickets");
+    if (!ticket) {
+      redirect("/tickets"); // Redirect if no ticket found for this event
     }
-  }, [user, ticket]);
+  }, [user, event, ticket]);
 
-  if (!ticket || !ticket.event) {
+  if (!event || !ticket) {
     return null;
   }
 
@@ -62,30 +68,30 @@ export default function TicketPage() {
 
           {/* Event Info Summary */}
           <div
-            className={`bg-white p-6 rounded-lg shadow-sm border ${ticket.event.is_cancelled ? "border-red-200" : "border-gray-100"}`}
+            className={`bg-white p-6 rounded-lg shadow-sm border ${event.is_cancelled ? "border-red-200" : "border-gray-100"}`}
           >
             <h1 className="text-2xl font-bold text-gray-900">
-              {ticket.event.name}
+              {event.name}
             </h1>
             <p className="mt-1 text-gray-600">
-              {new Date(ticket.event.eventDate).toLocaleDateString()} at{" "}
-              {ticket.event.location}
+              {new Date(event.eventDate).toLocaleDateString()} at{" "}
+              {event.location}
             </p>
             <div className="mt-4 flex items-center gap-4">
               <span
                 className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  ticket.event.is_cancelled
+                  event.is_cancelled
                     ? "bg-red-50 text-red-700"
                     : "bg-green-50 text-green-700"
                 }`}
               >
-                {ticket.event.is_cancelled ? "Cancelled" : "Valid Ticket"}
+                {event.is_cancelled ? "Cancelled" : "Valid Ticket"}
               </span>
               <span className="text-sm text-gray-500">
                 Purchased on {new Date(ticket.purchasedAt).toLocaleDateString()}
               </span>
             </div>
-            {ticket.event.is_cancelled && (
+            {event.is_cancelled && (
               <p className="mt-4 text-sm text-red-600">
                 This event has been cancelled. A refund will be processed if it
                 hasn&apos;t been already.
@@ -100,24 +106,24 @@ export default function TicketPage() {
         {/* Additional Information */}
         <div
           className={`mt-8 rounded-lg p-4 ${
-            ticket.event.is_cancelled
+            event.is_cancelled
               ? "bg-red-50 border-red-100 border"
               : "bg-blue-50 border-blue-100 border"
           }`}
         >
           <h3
             className={`text-sm font-medium ${
-              ticket.event.is_cancelled ? "text-red-900" : "text-blue-900"
+              event.is_cancelled ? "text-red-900" : "text-blue-900"
             }`}
           >
             Need Help?
           </h3>
           <p
             className={`mt-1 text-sm ${
-              ticket.event.is_cancelled ? "text-red-700" : "text-blue-700"
+              event.is_cancelled ? "text-red-700" : "text-blue-700"
             }`}
           >
-            {ticket.event.is_cancelled
+            {event.is_cancelled
               ? "For questions about refunds or cancellations, please contact our support team at team@papareact-tickr.com"
               : "If you have any issues with your ticket, please contact our support team at team@papareact-tickr.com"}
           </p>

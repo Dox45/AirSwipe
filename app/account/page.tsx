@@ -1,58 +1,3 @@
-// "use client";
-
-// import { useState, useEffect } from "react";
-// import { useUser } from "@clerk/nextjs";
-// import { useMutation, useQuery } from "convex/react";
-// import { api } from "@/convex/_generated/api";
-// import SetupSubaccount from "@/components/SetupSubaccount";
-
-// export default function AccountPage() {
-//   const { user } = useUser();
-//   const [showSetup, setShowSetup] = useState(false);
-  
-//   // Fetch account details from Convex
-//   const account = useQuery(api.account.getSubaccount, user ? { userId: user.id } : "skip");
-
-//   if (!user) return <div>Loading user...</div>;
-//   if (account === undefined) return <div>Loading account...</div>;
-
-//   return (
-//     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-//       {account ? (
-//        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg text-center border border-gray-200">
-//   <h2 className="text-2xl font-semibold text-gray-800 mb-6">Your Account Details</h2>
-  
-//   <div className="space-y-3 text-gray-700">
-//     <p className="text-lg"><strong className="text-gray-900">Business Name:</strong> {account.businessName}</p>
-//     <p className="text-lg"><strong className="text-gray-900">Bank:</strong> {account.settlementBank}</p>
-//     <p className="text-lg"><strong className="text-gray-900">Account Number:</strong> {account.accountNumber}</p>
-//     <p className="text-lg"><strong className="text-gray-900">Percentage Charge:</strong> {account.percentageCharge}%</p>
-//   </div>
-
-//   <button
-//     onClick={() => setShowSetup(true)}
-//     className="mt-6 px-6 py-3 bg-blue-600 text-white text-lg font-medium rounded-xl transition-all duration-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-//   >
-//     Edit Account
-//   </button>
-// </div>
-
-//       ) : (
-//         !showSetup ? (
-//           <button
-//             onClick={() => setShowSetup(true)}
-//             className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-//           >
-//             Setup Account
-//           </button>
-//         ) : (
-//           <SetupSubaccount />
-//         )
-//       )}
-//     </div>
-//   );
-// }
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -129,7 +74,7 @@ export default function AccountPage() {
   if (account === undefined) return <div>Loading account...</div>;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black-100 p-4">
       {account ? (
         <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg text-center border border-gray-200">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6">Your Account Details</h2>
@@ -148,7 +93,7 @@ export default function AccountPage() {
                 name="businessName"
                 value={formData.businessName}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full text-black px-4 py-2 border rounded-lg"
                 placeholder="Business Name"
               />
               <input
@@ -156,7 +101,7 @@ export default function AccountPage() {
                 name="settlementBank"
                 value={formData.settlementBank}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full text-black px-4 py-2 border rounded-lg"
                 placeholder="Bank Code"
               />
               <input
@@ -164,7 +109,7 @@ export default function AccountPage() {
                 name="accountNumber"
                 value={formData.accountNumber}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full text-black px-4 py-2 border rounded-lg"
                 placeholder="Account Number"
               />
               <button
@@ -193,12 +138,22 @@ export default function AccountPage() {
           )}
         </div>
       ) : !showSetup ? (
-        <button
-          onClick={() => setShowSetup(true)}
-          className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-        >
-          Setup Account
-        </button>
+            <div className="flex flex-col items-center justify-center min-h-screen px-4">
+            <img
+              src="/fox.webp"  // Replace with the actual path to your fox image
+              alt="Loading..."
+              className="w-40 h-40 object-contain"
+            />
+      
+
+          {/* Setup Button */}
+          <button
+            onClick={() => setShowSetup(true)}
+            className="mt-6 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+          >
+            Setup Account
+          </button>
+        </div>
       ) : (
         <SetupSubaccount />
       )}

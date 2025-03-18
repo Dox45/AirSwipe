@@ -17,9 +17,12 @@ export async function POST(request: Request) {
 
   const event = JSON.parse(rawBody);
 
+  // Log the complete webhook payload for inspection
+  console.log('Complete Paystack webhook payload:', JSON.stringify(event, null, 2));
+  console.log('Paystack metadata:', JSON.stringify(event?.data?.metadata, null, 2));
+  console.log('Paystack customer info:', JSON.stringify(event?.data?.customer, null, 2));
 
   if (event && event.event === 'charge.success') {
-    // const email = event.data.customer.email;
     // Handle successful payment
     await handleSuccessfulPayment(event);
   }
@@ -32,27 +35,65 @@ async function handleSuccessfulPayment(event) {
     const { data } = event;
     const metadata = data.metadata || {};
 
+    // Log the exact structure of the payment data
+    console.log('Payment data structure:', {
+      reference: data.reference,
+      amount: data.amount,
+      currency: data.currency,
+      channel: data.channel,
+      metadata: metadata,
+      customer: data.customer,
+      authorization: data.authorization
+    });
+
     const eventId = metadata.eventId;
-    const userId = metadata.userId;
-    const waitingListId = metadata.waitingListId; 
+    const buyerUserId = metadata.buyerUserId; // Changed from userId to buyerUserId
+    const waitingListId = metadata.waitingListId;
     const paymentIntentId = data.reference;
     const amount = data.amount;
-    // const email = data.customer.email;
 
-    if (!eventId || !userId || !waitingListId) {
+    if (!eventId || !buyerUserId || !waitingListId) {
       console.error("Missing required metadata:", metadata);
       return;
     }
 
-    console.log("Running Convex mutation to save ticket purchase...");
+    console.log("Fetching waiting list entry to get recipient info...");
     const convex = getConvexClient();
-    console.log("gotten convex client")
     
-    // Run Convex mutation to update purchase record
+    // First, get the waiting list entry to determine the recipient
+    const waitingListEntry = await convex.query(api.waitingList.getEntry, {
+      waitingListId
+    });
+
+    if (!waitingListEntry) {
+      console.error("Waiting list entry not found:", waitingListId);
+      return;
+    }
+
+    // Determine the actual recipient (either from recipientUserId or the original user)
+    const recipientUserId = waitingListEntry.recipientUserId || waitingListEntry.userId;
+
+    console.log("Processing purchase with recipient info:", {
+      eventId,
+      buyerUserId,
+      recipientUserId,
+      waitingListId
+    });
+
+    console.log("Processing purchase with recipient info:", {
+      eventId,
+      buyerUserId,
+      recipientUserId,
+      waitingListId,
+      paymentInfo: { paymentIntentId, amount }
+    });
+
+    // Run Convex mutation to update purchase record with buyer and recipient info
     const result = await convex.mutation(api.events.purchaseTicket, {
       eventId,
-      userId,
-      waitingListId, 
+      buyerUserId,
+      recipientUserId,
+      waitingListId,
       paymentInfo: { paymentIntentId, amount },
     });
 

@@ -41,30 +41,30 @@ body {
     --radius: 0.5rem;
   }
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --background: 222 47% 11%;
+    --foreground: 215 20% 98%;
+    --card: 222 47% 9%;
+    --card-foreground: 215 20% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 215 20% 98%;
+    --primary: 328 100% 54%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 199 89% 48%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 223 47% 16%;
+    --muted-foreground: 215 20% 70%;
+    --accent: 316 70% 43%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 223 47% 16%;
+    --input: 223 47% 16%;
+    --ring: 328 100% 54%;
+    --chart-1: 328 100% 54%;
+    --chart-2: 199 89% 48%;
+    --chart-3: 316 70% 43%;
+    --chart-4: 271 91% 65%;
+    --chart-5: 184 80% 74%;
   }
 }
 
@@ -75,4 +75,46 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+
+  
+.dark body {
+  @apply text-foreground;
+  background: radial-gradient(circle at top left, hsl(328, 100%, 54%, 0.15), transparent 30%),
+              radial-gradient(circle at bottom right, hsl(199, 89%, 48%, 0.15), transparent 30%),
+              linear-gradient(135deg, hsl(222, 47%, 11%), hsl(223, 47%, 8%), hsl(271, 47%, 12%));
+  min-height: 100vh;
+}
+
+.dark [class*='card'],
+.dark [class*='dialog'],
+.dark [class*='dropdown'] {
+  background: linear-gradient(to bottom right, hsla(223, 47%, 13%, 0.8), hsla(223, 47%, 11%, 0.8));
+  backdrop-filter: blur(12px);
+  border: 1px solid hsla(328, 100%, 54%, 0.1);
+  box-shadow: 0 8px 32px 0 hsla(223, 47%, 8%, 0.4);
+}
+
+.dark [class*='button']:not([class*='ghost']):not([class*='link']) {
+  background: linear-gradient(135deg, hsl(328, 100%, 54%), hsl(316, 70%, 43%));
+  transition: all 0.3s ease;
+}
+
+.dark [class*='button']:not([class*='ghost']):not([class*='link']):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px hsla(328, 100%, 54%, 0.4);
+}
+
+.dark [class*='input'],
+.dark [class*='textarea'] {
+  background: hsla(223, 47%, 13%, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid hsla(328, 100%, 54%, 0.1);
+  transition: all 0.3s ease;
+}
+
+.dark [class*='input']:focus,
+.dark [class*='textarea']:focus {
+  border-color: hsla(328, 100%, 54%, 0.5);
+  box-shadow: 0 0 0 2px hsla(328, 100%, 54%, 0.2);
+}
 }
