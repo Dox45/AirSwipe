@@ -496,3 +496,4 @@ export default function EventCard({ eventId }: { eventId: Id<"events"> }) {
     </div>
   );
 }
+
