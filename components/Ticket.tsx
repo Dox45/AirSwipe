@@ -18,11 +18,13 @@ import Image from "next/image";
 export default function Ticket({ ticketId }: { ticketId: Id<"tickets"> }) {
   const ticket = useQuery(api.tickets.getTicketWithDetails, { ticketId });
   const user = useQuery(api.users.getUserById, {
-    userId: ticket?.userId ?? "",
+    userId: ticket?.buyerUserId ?? "",
   });
   const imageUrl = useStorageUrl(ticket?.event?.imageStorageId);
 
   if (!ticket || !ticket.event || !user) {
+    console.log("the issue")
+    console.log(user)
     return <Spinner />;
   }
 
