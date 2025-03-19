@@ -165,7 +165,7 @@ export default function JoinQueue({
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-2 mb-4">
+{/*               <div className="flex items-center gap-2 mb-4">
                 <input
                   type="checkbox"
                   id="buyForSomeoneElse"
@@ -183,7 +183,7 @@ export default function JoinQueue({
                   onChange={(e) => setRecipientEmail(e.target.value)}
                   className="w-full text-black p-2 mb-4 border rounded-lg"
                 />
-              )}
+              )} */}
               <button
                 onClick={handleJoinQueue}
                 disabled={isPastEvent || isEventOwner}
