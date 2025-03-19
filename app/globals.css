@@ -2,119 +2,88 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  .form-input {
-    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
-  }
-}
-
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
-
+/* 🌟 Base Theme */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --background: 230 100% 97%;
+    --foreground: 230 20% 10%;
+    --card: 230 100% 98%;
+    --card-foreground: 230 20% 15%;
+    --primary: 220 90% 55%;
+    --primary-foreground: 220 100% 98%;
+    --secondary: 230 60% 95%;
+    --secondary-foreground: 230 20% 20%;
+    --border: 230 60% 80%;
+    --input: 230 60% 85%;
+    --radius: 12px;
   }
+
+  /* 🌙 Dark Mode */
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 215 20% 98%;
-    --card: 222 47% 9%;
-    --card-foreground: 215 20% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 215 20% 98%;
-    --primary: 328 100% 54%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 199 89% 48%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 223 47% 16%;
-    --muted-foreground: 215 20% 70%;
-    --accent: 316 70% 43%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 223 47% 16%;
-    --input: 223 47% 16%;
-    --ring: 328 100% 54%;
-    --chart-1: 328 100% 54%;
-    --chart-2: 199 89% 48%;
-    --chart-3: 316 70% 43%;
-    --chart-4: 271 91% 65%;
-    --chart-5: 184 80% 74%;
+    --background: 222 50% 8%;
+    --foreground: 220 20% 95%;
+    --card: 222 50% 10%;
+    --primary: 328 85% 58%;
+    --secondary: 230 40% 15%;
+    --border: 230 40% 25%;
+    --input: 230 40% 30%;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-
-  
-.dark body {
-  @apply text-foreground;
-  background: radial-gradient(circle at top left, hsl(328, 100%, 54%, 0.15), transparent 30%),
-              radial-gradient(circle at bottom right, hsl(199, 89%, 48%, 0.15), transparent 30%),
-              linear-gradient(135deg, hsl(222, 47%, 11%), hsl(223, 47%, 8%), hsl(271, 47%, 12%));
-  min-height: 100vh;
+/* 🌟 Background & Layout */
+body {
+  @apply bg-background text-foreground transition-all duration-300;
+  background: radial-gradient(
+      circle at top left,
+      hsl(328, 100%, 54%, 0.12),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      hsl(199, 89%, 48%, 0.12),
+      transparent 30%
+    ),
+    linear-gradient(135deg, hsl(222, 50%, 8%), hsl(223, 50%, 6%));
 }
 
-.dark [class*='card'],
-.dark [class*='dialog'],
-.dark [class*='dropdown'] {
-  background: linear-gradient(to bottom right, hsla(223, 47%, 13%, 0.8), hsla(223, 47%, 11%, 0.8));
-  backdrop-filter: blur(12px);
-  border: 1px solid hsla(328, 100%, 54%, 0.1);
-  box-shadow: 0 8px 32px 0 hsla(223, 47%, 8%, 0.4);
+/* 🌟 Card & Modal Styling */
+.card, .cl-card {
+  @apply bg-gradient-to-br from-[#1a1b2d] to-[#12131e] text-white shadow-lg border border-gray-700 rounded-lg;
 }
 
-.dark [class*='button']:not([class*='ghost']):not([class*='link']) {
-  background: linear-gradient(135deg, hsl(328, 100%, 54%), hsl(316, 70%, 43%));
-  transition: all 0.3s ease;
+/* 🌟 Buttons */
+.button, .cl-button {
+  @apply bg-gradient-to-r from-[#ff4081] to-[#ff5b99] text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:opacity-90 transition-all;
 }
 
-.dark [class*='button']:not([class*='ghost']):not([class*='link']):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px hsla(328, 100%, 54%, 0.4);
+/* 🌟 Inputs & Forms */
+.input, .cl-input {
+  @apply bg-[#222436] text-white border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#ff4081] transition-all;
 }
 
-.dark [class*='input'],
-.dark [class*='textarea'] {
-  background: hsla(223, 47%, 13%, 0.6);
-  backdrop-filter: blur(8px);
-  border: 1px solid hsla(328, 100%, 54%, 0.1);
-  transition: all 0.3s ease;
+/* 🌟 Header */
+header {
+  @apply bg-gradient-to-r from-[#1a1b2d] to-[#12131e] text-white shadow-md p-4 rounded-b-lg;
 }
 
-.dark [class*='input']:focus,
-.dark [class*='textarea']:focus {
-  border-color: hsla(328, 100%, 54%, 0.5);
-  box-shadow: 0 0 0 2px hsla(328, 100%, 54%, 0.2);
+/* 🌟 Clerk Components */
+.cl-rootBox, .cl-modal {
+  @apply bg-gradient-to-br from-[#1a1b2d] to-[#12131e] shadow-xl border border-gray-700 rounded-lg;
 }
+
+/* 🌟 Clerk Modals (Signup/Signin) */
+.cl-card {
+  @apply bg-gradient-to-br from-[#1a1b2d] to-[#12131e] border border-gray-600 shadow-md;
+}
+
+.cl-headerTitle {
+  @apply text-white text-xl font-bold;
+}
+
+.cl-formButtonPrimary {
+  @apply bg-[#ff4081] text-white hover:bg-[#ff5b99] transition-all;
+}
+
+.cl-formFieldInput {
+  @apply bg-[#222436] text-white border border-gray-600 focus:ring-2 focus:ring-[#ff4081] transition-all;
 }
