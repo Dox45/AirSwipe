@@ -206,7 +206,7 @@ export default function EventCard({ eventId }: { eventId: Id<"events"> }) {
                     : "bg-green-50 text-green-700"
                 }`}
               >
-                £{event.price.toFixed(2)}
+                N{event.price.toFixed(2)}
               </span>
             </div>
             {availability.purchasedCount >= availability.totalTickets && (
