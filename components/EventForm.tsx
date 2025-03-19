@@ -130,22 +130,41 @@ export default function EventForm({ mode, initialData }: EventFormProps) {
           } catch (error) {
             // Check if it's the no settlement account error
             if (error instanceof Error && error.message.includes("no settlement account")) {
+              // toast({
+              //   variant: "destructive",
+              //   title: "Settlement Account Required",
+              //   description: (
+              //     <div className="flex flex-col gap-2">
+              //       <p>You need to set up a settlement account before creating events.</p>
+              //       <Button 
+              //         variant="outline" 
+              //         onClick={() => router.push("/account")}
+              //       >
+              //         Set up Account
+              //       </Button>
+              //     </div>
+              //   ),
+              //   duration: 10000, // Show for 10 seconds
+              // });
               toast({
-                variant: "destructive",
-                title: "Settlement Account Required",
-                description: (
-                  <div className="flex flex-col gap-2">
-                    <p>You need to set up a settlement account before creating events.</p>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => router.push("/account")}
-                    >
-                      Set up Account
-                    </Button>
-                  </div>
-                ),
-                duration: 10000, // Show for 10 seconds
-              });
+                    variant: "destructive",
+                    title: "Settlement Account Required",
+                    description: (
+                      <div className="flex flex-col gap-2">
+                        <p>You need to set up a settlement account before creating events.</p>
+                        <Button 
+                          variant="outline" 
+                          className="border-white text-white hover:bg-white hover:text-black transition"
+                          onClick={() => router.push("/account")}
+                        >
+                          Set up Account
+                        </Button>
+                      </div>
+                    ),
+                    className: "bg-purple-700 text-white border border-purple-500 shadow-lg", // 🔥 Ensures solid background
+                    duration: 10000,
+                  });
+
               return;
             }
             throw error; // Re-throw if it's a different error
@@ -303,7 +322,7 @@ export default function EventForm({ mode, initialData }: EventFormProps) {
                 <FormControl>
                   <div className="relative">
                     <span className="absolute left-2 top-1/2 -translate-y-1/2">
-                      £
+                      N
                     </span>
                     <Input
                       type="number"
