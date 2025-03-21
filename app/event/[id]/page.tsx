@@ -216,7 +216,18 @@ export default function EventPage() {
                     {
                       icon: <Ticket className="w-5 h-5 text-blue-600" />,
                       label: "Price",
-                      value: `N${event.price.toFixed(2)}`,
+                      value: event.hasTiers ? (
+                        <div>
+                          <p>Ticket Tiers:</p>
+                          <ul>
+                            {event.tiers?.map((tier) => (
+                              <li key={tier._id}>
+                                {tier.name}: N{tier.price.toFixed(2)}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : `N${event.price.toFixed(2)}`,
                     },
                     {
                       icon: <Users className="w-5 h-5 text-blue-600" />,
