@@ -84,6 +84,7 @@ export default function Ticket({ ticketId }: { ticketId: Id<"tickets"> }) {
               <div>
                 <p className="text-sm text-gray-500">Location</p>
                 <p className="font-medium">{ticket.event.location}</p>
+                <p className="text-sm text-black">{ticket.code}</p>
               </div>
             </div>
 
@@ -113,8 +114,12 @@ export default function Ticket({ ticketId }: { ticketId: Id<"tickets"> }) {
                 className={`w-5 h-5 mr-3 ${ticket.event.is_cancelled ? "text-red-600" : "text-blue-600"}`}
               />
               <div>
-                <p className="text-sm text-gray-500">Ticket Price</p>
-                <p className="font-medium">N{ticket.event.price.toFixed(2)}</p>
+                {ticket.ticketTierId ? (
+                  <p>Ticket Tier: {ticket.ticketTierId} </p>
+                ) : (
+                  <p className="text-sm text-gray-500">Ticket Price</p>
+                  <p className="font-medium">N{ticket.event.price.toFixed(2)}</p>
+                )}
               </div>
             </div>
           </div>

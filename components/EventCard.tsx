@@ -462,6 +462,33 @@ export default function EventCard({ eventId }: { eventId: Id<"events"> }) {
                 eventSlug={event.slug}
                 eventId={eventId}
               />
+              {event?.hasTiers ? (
+                <div>
+                <p className={`px-4 py-1.5 font-semibold rounded-full ${
+                      isPastEvent
+                        ? "bg-gray-50 text-gray-500"
+                        : "bg-green-50 text-green-700"
+                    }`}>Ticket Tiers:</p>
+                <ul>
+                  {event.tiers?.map((tier) => (
+                    
+                    <li className="" key={tier._id}>
+                      <span
+                    className={`px-4 py-1.5 font-semibold rounded-full ${
+                      isPastEvent
+                        ? "bg-gray-50 text-gray-500"
+                        : "bg-green-50 text-green-700"
+                    }`}
+                  >
+                      {tier.name}: N{tier.price}
+                      </span>
+                    </li>
+                    
+                  ))}
+                </ul>
+              </div>
+            ): (
+            
               <span
                 className={`px-4 py-1.5 font-semibold rounded-full ${
                   isPastEvent
@@ -471,6 +498,7 @@ export default function EventCard({ eventId }: { eventId: Id<"events"> }) {
               >
                 N{event.price.toFixed(2)}
               </span>
+  )}
             </div>
             {availability.purchasedCount >= availability.totalTickets && (
               <span className="px-4 py-1.5 bg-red-50 text-red-700 font-semibold rounded-full text-sm">

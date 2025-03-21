@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "@/convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import {
   CalendarDays,
@@ -17,6 +17,7 @@ import Image from "next/image";
 import CancelEventButton from "./CancelEventButton";
 import { Doc } from "@/convex/_generated/dataModel";
 import { Metrics } from "@/convex/events";
+import { useState } from "react";
 
 export default function SellerEventList() {
   const { user } = useUser();
@@ -61,6 +62,54 @@ export default function SellerEventList() {
   );
 }
 
+
+
+
+interface SellerEventListProps {
+  eventId: string;
+}
+
+function SellerEventSearch({ eventId }: SellerEventListProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const codes = useQuery(api.codes.getCodes, { eventId });
+  const updateCheckIn = useMutation(api.codes.updateCheckInStatus);
+
+  const filteredCodes = codes?.filter(code => 
+    code.code.includes(searchQuery)
+  ) || [];
+
+  return (
+    <div className="space-y-4">
+      <input
+        type="text"
+        placeholder="Search by code..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="w-full text-black p-2 border rounded"
+      />
+
+      <div className="space-y-2">
+        {filteredCodes.map((code) => (
+          <div key={code._id} className="flex items-center justify-between p-2 border rounded">
+            <span>{code.code}</span>
+            <input
+              type="checkbox"
+              checked={code.checkedIn}
+              onChange={(e) => {
+                updateCheckIn({ codeId: code._id, checkedIn: e.target.checked });
+              }}
+              disabled={code.checkedIn}
+              className="w-4 h-4"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+
 function SellerEventCard({
   event,
 }: {
@@ -96,6 +145,7 @@ function SellerEventCard({
                 <h3 className="text-xl font-semibold text-gray-900">
                   {event.name}
                 </h3>
+                <SellerEventSearch eventId={event._id} />
                 <p className="mt-1 text-gray-500">{event.description}</p>
                 {event.is_cancelled && (
                   <div className="mt-2 flex items-center gap-2 text-red-600">
@@ -158,7 +208,7 @@ function SellerEventCard({
                   </span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">
-                  £
+                  N
                   {event.is_cancelled
                     ? event.metrics.refundedTickets * event.price
                     : event.metrics.revenue}

@@ -24,6 +24,7 @@ export default function PurchaseTicket({
 }: PurchaseTicketProps) {
   const router = useRouter();
   const { user } = useUser();
+  const [selectedTier, setSelectedTier] = useState(null);
   const [debouncedEmail] = useDebounce(recipientEmail, 500);
 
   // Only fetch queue position if user is available
@@ -44,17 +45,17 @@ export default function PurchaseTicket({
     eventId ? { eventId } : "skip"
   );
 
+  // const ticketPrice = useQuery(
+  //   api.tickets.getTicketPrice, 
+  //   eventId ? { eventId, ticketTierId: selectedTier._id } : "skip"
+  // ) ?? 0;
+
   const ticketPrice = useQuery(
-    api.tickets.getTicketPrice, 
-    eventId ? { eventId } : "skip"
+    api.tickets.getTicketPrice,
+    eventId && selectedTier
+      ? { eventId, ticketTierId: selectedTier._id }
+      : "skip"
   ) ?? 0;
-  console.log("Event ID:", eventId);
-  console.log("User ID:", user?.id);
-  console.log("Queue Position:", queuePosition);
-  console.log("Queue Position Status:", queuePosition?.status);
-  console.log("Queue Position Offer Expires At:", queuePosition?.offerExpiresAt);
-  console.log("Recipient Email from Queue:", queuePosition?.recipientEmail);
-  console.log("User's Primary Email:", user?.emailAddresses[0]?.emailAddress);
 
   const [timeRemaining, setTimeRemaining] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -167,7 +168,28 @@ const userEmail = queuePosition?.recipientEmail || user.emailAddresses[0]?.email
           </div>
         </div>
 
-        {ticketPrice <= 0 ? (
+    <div className="space-y-4">
+        {event.tiers?.map((tier) => (
+          <div key={tier._id} className="flex items-center text-black gap-2">
+            <input
+              type="radio"
+              name="tier"
+              value={tier._id}
+              checked={selectedTier?._id === tier._id}
+              onChange={() => setSelectedTier(tier)}
+              className="w-4 h-4"
+            />
+            <label className="text-sm text-black">
+              {tier.name}: N{tier.price.toFixed(2)}
+            </label>
+          </div>
+        ))}
+</div>
+
+        {event.hasTiers && !selectedTier ? (
+          <p className="text-sm text-gray-600">Please select a ticket tier</p>
+        ) : (
+        ticketPrice <= 0 ? (
           <button
             onClick={handlePurchase}
             disabled={isExpired || isLoading}
@@ -183,7 +205,7 @@ const userEmail = queuePosition?.recipientEmail || user.emailAddresses[0]?.email
           >
             {isLoading ? "Processing..." : "Proceed to Payment →"}
           </button>
-        )}
+       ) )}
 
         <div className="mt-4">
           <ReleaseTicket eventId={eventId} waitingListId={queuePosition._id} />

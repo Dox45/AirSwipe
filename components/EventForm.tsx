@@ -76,6 +76,7 @@ export default function EventForm({ mode, initialData }: EventFormProps) {
 
   const [removedCurrentImage, setRemovedCurrentImage] = useState(false);
 
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -87,6 +88,22 @@ export default function EventForm({ mode, initialData }: EventFormProps) {
       totalTickets: initialData?.totalTickets ?? 1,
     },
   });
+
+  const [ticketTiers, setTicketTiers] = useState([]);
+  const [hasTiers, setHasTiers] = useState(false);
+  const [fixedPrice, setFixedPrice] = useState(0);
+
+  const addTicketTier = () => {
+    setTicketTiers([...ticketTiers, { name: '', price: 0, description: '' }]);
+  };
+
+  const handleTicketTierChange = (index, field, value) => {
+    const updatedTiers = [...ticketTiers];
+    updatedTiers[index][field] = value;
+    setTicketTiers(updatedTiers);
+  };
+
+  const createTicketTier = useMutation(api.tickets.createTicketTier)
 
   async function onSubmit(values: FormData) {
     if (!user?.id) return;
@@ -117,7 +134,25 @@ export default function EventForm({ mode, initialData }: EventFormProps) {
               ...values,
               userId: user.id,
               eventDate: values.eventDate.getTime(),
+              hasTiers: ticketTiers.length > 0,
             });
+
+            if (hasTiers) {
+            for (const tier of ticketTiers) {
+              await createTicketTier({
+                eventId,
+                name: tier.name,
+                price: tier.price,
+                description: tier.description,
+              });
+            }
+          } else {
+            // Set fixed price for the event
+            await updateEvent({
+              eventId,
+              price: fixedPrice,
+            });
+          }
 
             if (imageStorageId) {
               await updateEventImage({
@@ -130,22 +165,6 @@ export default function EventForm({ mode, initialData }: EventFormProps) {
           } catch (error) {
             // Check if it's the no settlement account error
             if (error instanceof Error && error.message.includes("no settlement account")) {
-              // toast({
-              //   variant: "destructive",
-              //   title: "Settlement Account Required",
-              //   description: (
-              //     <div className="flex flex-col gap-2">
-              //       <p>You need to set up a settlement account before creating events.</p>
-              //       <Button 
-              //         variant="outline" 
-              //         onClick={() => router.push("/account")}
-              //       >
-              //         Set up Account
-              //       </Button>
-              //     </div>
-              //   ),
-              //   duration: 10000, // Show for 10 seconds
-              // });
               toast({
                     variant: "destructive",
                     title: "Settlement Account Required",
@@ -313,6 +332,54 @@ export default function EventForm({ mode, initialData }: EventFormProps) {
             )}
           />
 
+            <label>
+                <input
+                  type="checkbox"
+                  checked={hasTiers}
+                  onChange={(e) => setHasTiers(e.target.checked)}
+                />
+                Enable Ticket Tiers
+              </label>
+
+              {hasTiers && (
+                  <div className="space-y-4">
+                    {ticketTiers.map((tier, index) => (
+                      <div key={index} className="space-y-2">
+                        <Input
+                          type="text"
+                          placeholder="Tier Name"
+                          value={tier.name}
+                          onChange={(e) => handleTicketTierChange(index, 'name', e.target.value)}
+                        />
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2">N</span>
+                        <Input
+                          type="number"
+                          placeholder="Price"
+                          value={tier.price}
+                          onChange={(e) => handleTicketTierChange(index, 'price', parseFloat(e.target.value))}
+                          className="pl-6"
+                        />
+                        </div>
+                        <Textarea
+                          placeholder="Description"
+                          value={tier.description}
+                          onChange={(e) => handleTicketTierChange(index, 'description', e.target.value)}
+                        />
+                      </div>
+                    ))}
+                <Button
+                  type="button"
+                  onClick={addTicketTier}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  Add Tier
+                </Button>
+              </div>
+
+                )}
+
+      {!hasTiers && (
           <FormField
             control={form.control}
             name="price"
@@ -336,7 +403,7 @@ export default function EventForm({ mode, initialData }: EventFormProps) {
               </FormItem>
             )}
           />
-
+)}
           <FormField
             control={form.control}
             name="totalTickets"
