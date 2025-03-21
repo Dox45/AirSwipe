@@ -5,6 +5,7 @@ import { DURATIONS, WAITING_LIST_STATUS, TICKET_STATUS } from "./constants";
 import { components, internal } from "./_generated/api";
 import { processQueue } from "./waitingList";
 import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
+import { generateUniqueCode } from "./utils"
 
 export type Metrics = {
   soldTickets: number;
@@ -35,7 +36,16 @@ export const get = query({
 export const getById = query({
   args: { eventId: v.id("events") },
   handler: async (ctx, { eventId }) => {
-    return await ctx.db.get(eventId);
+    const event = await ctx.db.get(eventId);
+    if (!event) return null;
+    if (event.hasTiers){
+      const tiers = await ctx.db
+        .query("ticketTiers")
+        .withIndex("by_event", (q) => q.eq("eventId", eventId))
+        .collect();
+        return { ...event, tiers};
+    }
+    return event;
   },
 });
 
@@ -58,6 +68,7 @@ export const create = mutation({
     price: v.number(),
     totalTickets: v.number(),
     userId: v.string(),
+    hasTiers: v.boolean(),
   },
   handler: async (ctx, args) => {
     const subaccount = await ctx.db
@@ -89,6 +100,7 @@ export const create = mutation({
       totalTickets: args.totalTickets,
       userId: args.userId,
       subaccountCode: subaccount.subaccountCode,
+      hasTiers: args.hasTiers,
     });
     return eventId;
   },
@@ -333,6 +345,7 @@ export const purchaseTicket = mutation({
     eventId: v.id("events"),
     buyerUserId: v.string(), // Buyer (could be different from recipient)
     waitingListId: v.id("waitingList"),
+    ticketTierId: v.optional(v.id('ticketTiers')),
     recipientUserId: v.string(), // Added to match webhook's recipient info
     paymentInfo: v.object({
       paymentIntentId: v.string(),
@@ -389,15 +402,18 @@ export const purchaseTicket = mutation({
 
     try {
       console.log("Creating ticket with payment info", paymentInfo);
+      const code = generateUniqueCode();
       // Create ticket with payment info
       await ctx.db.insert("tickets", {
         eventId,
         buyerUserId, // Store who made the purchase
+        ticketTierId: args.ticketTierId,
         recipientUserId: args.recipientUserId, // Store who will use the ticket
         purchasedAt: Date.now(),
         status: TICKET_STATUS.VALID,
         paymentIntentId: paymentInfo.paymentIntentId,
         amount: paymentInfo.amount,
+        code
       });
 
       console.log("Updating waiting list status to purchased");

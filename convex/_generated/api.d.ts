@@ -9,6 +9,7 @@
  */
 
 import type * as account from "../account.js";
+import type * as codes from "../codes.js";
 import type * as constants from "../constants.js";
 import type * as crons from "../crons.js";
 import type * as events from "../events.js";
@@ -16,6 +17,7 @@ import type * as storage from "../storage.js";
 import type * as test from "../test.js";
 import type * as tickets from "../tickets.js";
 import type * as users from "../users.js";
+import type * as utils from "../utils.js";
 import type * as waitingList from "../waitingList.js";
 
 import type {
@@ -33,6 +35,7 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   account: typeof account;
+  codes: typeof codes;
   constants: typeof constants;
   crons: typeof crons;
   events: typeof events;
@@ -40,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   test: typeof test;
   tickets: typeof tickets;
   users: typeof users;
+  utils: typeof utils;
   waitingList: typeof waitingList;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
