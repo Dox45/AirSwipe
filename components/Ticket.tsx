@@ -117,8 +117,10 @@ export default function Ticket({ ticketId }: { ticketId: Id<"tickets"> }) {
                 {ticket.ticketTierId ? (
                   <p>Ticket Tier: {ticket.ticketTierId} </p>
                 ) : (
+                  <span>
                   <p className="text-sm text-gray-500">Ticket Price</p>
                   <p className="font-medium">N{ticket.event.price.toFixed(2)}</p>
+                  </span>
                 )}
               </div>
             </div>
